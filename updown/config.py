@@ -34,6 +34,11 @@ class General:
     log_dir: str
     db_path: str
 
+    @property
+    def data_dir(self) -> Path:
+        """Папка данных; '~' раскрывается в домашнюю папку пользователя."""
+        return Path(self.log_dir).expanduser()
+
     def validate(self) -> None:
         if not self.symbols:
             raise ConfigError("general.symbols пуст")

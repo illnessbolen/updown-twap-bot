@@ -29,6 +29,11 @@ def test_example_config_is_valid():
     assert set(cfg.profiles) == {"conservative", "moderate", "aggressive"}
 
 
+def test_data_dir_expands_home():
+    cfg = load_config(EXAMPLE)
+    assert cfg.general.data_dir == Path.home() / ".updown-bot" / "data"
+
+
 def test_missing_config_file_explains_what_to_do(tmp_path):
     with pytest.raises(ConfigError, match="config.example.toml"):
         load_config(tmp_path / "config.toml")

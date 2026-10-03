@@ -6,7 +6,8 @@ dry_run = true              # live возможен только если dry_ru
 profile = "conservative"    # conservative | moderate | aggressive
 symbols = ["btcusd", "ethusd"]   # символы PolyBolt: нижний регистр, суффикс usd (не btc/usd)
 windows = [5, 15]           # минуты. Оба типа рынков рассчитываются по Chainlink TWAP 60 с (docs/API_NOTES.md, §0)
-log_dir = "data"            # JSONL-записи: data/ГГГГ-ММ-ДД/*.jsonl (дата по UTC)
+log_dir = "~/.updown-bot/data"   # записи: <папка>/ГГГГ-ММ-ДД/*.jsonl.gz (дата по UTC). Вне папки проекта,
+                            # чтобы данные не пропали при обновлении. Windows: C:\Users\<имя>\.updown-bot\data
 db_path = "bot.db"
 
 [feed]

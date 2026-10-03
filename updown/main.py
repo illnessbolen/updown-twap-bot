@@ -39,7 +39,7 @@ log = logging.getLogger("updown")
 CLOB_URL = "https://clob.polymarket.com"
 
 
-def setup_logging(log_dir: str | None) -> None:
+def setup_logging(log_dir: str | Path | None) -> None:
     fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%Y-%m-%d %H:%M:%S")
     root = logging.getLogger()
     root.setLevel(logging.INFO)
@@ -130,7 +130,7 @@ async def run_record(cfg: Config, creds, *, stop: asyncio.Event | None = None,
                      connect_kwargs: dict | None = None, gamma: GammaClient | None = None,
                      status_every_sec: float = 30.0) -> int:
     stop = stop or asyncio.Event()
-    rec = JsonlRecorder(cfg.general.log_dir, compress=cfg.record.compress)
+    rec = JsonlRecorder(cfg.general.data_dir, compress=cfg.record.compress)
     history = TwapHistory()
 
     def on_tick(t):
@@ -237,7 +237,7 @@ async def run_record(cfg: Config, creds, *, stop: asyncio.Event | None = None,
              asyncio.create_task(rec.run(stop), name="recorder"),
              asyncio.create_task(status(), name="status")]
     log.info("запись началась: цены %s, рынки %s мин, данные в %s/<дата>/. Остановка: Ctrl+C",
-             ", ".join(cfg.general.symbols), cfg.general.windows, cfg.general.log_dir)
+             ", ".join(cfg.general.symbols), cfg.general.windows, cfg.general.data_dir)
     code = 0
     try:
         done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
@@ -259,7 +259,7 @@ async def run_record(cfg: Config, creds, *, stop: asyncio.Event | None = None,
 
 def cmd_record(args) -> int:
     cfg = load_config(args.config)
-    setup_logging(cfg.general.log_dir)
+    setup_logging(cfg.general.data_dir)
     env = load_env(find_env_file(args.env_file))
     creds = load_api_creds(env)
     gate = live_gate(cfg.general.dry_run, env, args.live)
@@ -323,7 +323,7 @@ def feed_stats(day_dir: Path) -> str:
 def cmd_feed_stats(args) -> int:
     cfg = load_config(args.config)
     day = args.day or utc_day(time.time())
-    print(feed_stats(Path(cfg.general.log_dir) / day))
+    print(feed_stats(cfg.general.data_dir / day))
     return 0
 
 
@@ -332,7 +332,7 @@ def cmd_feed_stats(args) -> int:
 async def strike_check(cfg: Config, days: list[str], gamma: GammaClient | None = None,
                        now: float | None = None) -> str:
     """Наш strike/итог (по записанному TWAP) против eventMetadata закрытых рынков Polymarket."""
-    root = Path(cfg.general.log_dir)
+    root = cfg.general.data_dir
     history = TwapHistory(keep_sec=10 ** 9)
     for day in days:
         for r in iter_records(root / day, "prices"):
