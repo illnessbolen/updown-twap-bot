@@ -17,6 +17,25 @@ reconnect_backoff_sec = [1, 2, 5, 10, 30]
 use_spot_for_sigma = true   # sigma по споту, а не по сглаженному TWAP
 spot_provider = "chainlink" # "chainlink" | "pyth" | "" (по умолчанию сервера)
 
+[markets]
+gamma_url = "https://gamma-api.polymarket.com"
+refresh_sec = 30            # как часто перечитывать список рынков из Gamma
+lookahead_min = 20          # заранее подгружать рынки, которые начнутся в ближайшие N минут
+strike_settle_sec = 3       # через сколько секунд после начала окна фиксировать strike (поток TWAP запаздывает ~1.5 с)
+strike_max_gap_sec = 2      # если принта ровно на границе нет, взять последний не старше N с; иначе strike неизвестен
+
+[book]
+url = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
+ping_sec = 10               # PING по документации каждые 10 с
+stale_after_sec = 30        # нет данных стакана дольше этого: переподключение
+subscribe_before_start_sec = 60   # подписываться на стакан рынка за N с до начала окна
+keep_after_end_sec = 30     # и держать подписку N с после конца
+
+[record]
+compress = true             # писать .jsonl.gz: примерно в 8-10 раз меньше места
+book_levels = 10            # сколько уровней стакана записывать с каждой стороны
+book_every_sec = 1.0        # снимок стакана не чаще раза в N с на токен (и только если он изменился)
+
 [signal]
 min_prints = 20
 cost = 0.02                 # запас на спред и проскальзывание, доля цены контракта (комиссия считается отдельно, fees.py)

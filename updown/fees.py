@@ -57,7 +57,8 @@ class FeeSchedule:
             enabled=True,
         )
 
-    def _check(self) -> None:
+    def check(self) -> None:
+        """Бросает UnsupportedFeeSchedule, если формула для этих параметров не подтверждена."""
         # TODO(verify): как exponent входит в формулу при значении != 1, в документации нет.
         if self.exponent != _ONE:
             raise UnsupportedFeeSchedule(f"feeSchedule.exponent = {self.exponent}, поддерживается только 1")
@@ -81,7 +82,7 @@ def fee_per_share(price: Number, schedule: FeeSchedule = CRYPTO) -> Decimal:
     _check_price(p)
     if not schedule.enabled or schedule.rate == 0:
         return Decimal(0)
-    schedule._check()
+    schedule.check()
     return schedule.rate * p * (_ONE - p)
 
 
@@ -102,7 +103,7 @@ def maker_fee(shares: Number, price: Number, schedule: FeeSchedule = CRYPTO) -> 
     """Мейкер комиссию не платит (при takerOnly = true)."""
     _check_price(_d(price))
     if schedule.enabled and schedule.rate != 0:
-        schedule._check()
+        schedule.check()
     return Decimal(0)
 
 

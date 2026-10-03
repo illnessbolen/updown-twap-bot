@@ -69,6 +69,57 @@ class Feed:
 
 
 @dataclass(frozen=True)
+class Markets:
+    gamma_url: str
+    refresh_sec: float
+    lookahead_min: float
+    strike_settle_sec: float
+    strike_max_gap_sec: float
+
+    def validate(self) -> None:
+        if not self.gamma_url.startswith("https://"):
+            raise ConfigError("markets.gamma_url должен начинаться с https://")
+        if self.refresh_sec < 5:
+            raise ConfigError("markets.refresh_sec должен быть >= 5 (лимиты Gamma)")
+        if self.lookahead_min <= 0:
+            raise ConfigError("markets.lookahead_min должен быть > 0")
+        if not 0 <= self.strike_settle_sec <= 30 or not 0 <= self.strike_max_gap_sec <= 10:
+            raise ConfigError("markets.strike_settle_sec в [0, 30], strike_max_gap_sec в [0, 10]")
+
+
+@dataclass(frozen=True)
+class Book:
+    url: str
+    ping_sec: float
+    stale_after_sec: float
+    subscribe_before_start_sec: float
+    keep_after_end_sec: float
+
+    def validate(self) -> None:
+        if not self.url.startswith(("wss://", "ws://")):
+            raise ConfigError("book.url должен начинаться с wss://")
+        if not 1 <= self.ping_sec <= 10:
+            raise ConfigError("book.ping_sec в [1, 10]: сервер ждёт PING каждые 10 с")
+        if self.stale_after_sec <= self.ping_sec:
+            raise ConfigError("book.stale_after_sec должен быть больше ping_sec")
+        if self.subscribe_before_start_sec < 0 or self.keep_after_end_sec < 0:
+            raise ConfigError("book.subscribe_before_start_sec и keep_after_end_sec должны быть >= 0")
+
+
+@dataclass(frozen=True)
+class Record:
+    compress: bool
+    book_levels: int
+    book_every_sec: float
+
+    def validate(self) -> None:
+        if not 1 <= self.book_levels <= 100:
+            raise ConfigError("record.book_levels в [1, 100]")
+        if self.book_every_sec <= 0:
+            raise ConfigError("record.book_every_sec должен быть > 0")
+
+
+@dataclass(frozen=True)
 class Signal:
     min_prints: int
     cost: float
@@ -142,6 +193,9 @@ class Monitor:
 class Config:
     general: General
     feed: Feed
+    markets: Markets
+    book: Book
+    record: Record
     signal: Signal
     execution: Execution
     paper: Paper
@@ -199,13 +253,15 @@ def _build(cls: type, data: Any, where: str) -> Any:
 
 
 def parse_config(data: Mapping[str, Any]) -> Config:
-    sections = {"general", "feed", "signal", "execution", "paper", "profiles", "monitor"}
+    sections = {"general", "feed", "markets", "book", "record", "signal", "execution", "paper",
+                "profiles", "monitor"}
     unknown = set(data) - sections
     if unknown:
         raise ConfigError(f"неизвестные секции: {sorted(unknown)}")
     missing = sections - set(data)
     if missing:
-        raise ConfigError(f"нет секций: {sorted(missing)}")
+        raise ConfigError(f"нет секций: {sorted(missing)}. Если вы обновили бота, скопируйте заново "
+                          f"config.example.toml в config.toml и перенесите свои изменения")
 
     raw_profiles = data["profiles"]
     if not isinstance(raw_profiles, dict) or not raw_profiles:
@@ -220,13 +276,17 @@ def parse_config(data: Mapping[str, Any]) -> Config:
     cfg = Config(
         general=_build(General, data["general"], "general"),
         feed=_build(Feed, data["feed"], "feed"),
+        markets=_build(Markets, data["markets"], "markets"),
+        book=_build(Book, data["book"], "book"),
+        record=_build(Record, data["record"], "record"),
         signal=_build(Signal, data["signal"], "signal"),
         execution=_build(Execution, data["execution"], "execution"),
         paper=_build(Paper, data["paper"], "paper"),
         profiles=profiles,
         monitor=_build(Monitor, data["monitor"], "monitor"),
     )
-    for section in (cfg.general, cfg.feed, cfg.signal, cfg.execution, cfg.paper):
+    for section in (cfg.general, cfg.feed, cfg.markets, cfg.book, cfg.record, cfg.signal,
+                    cfg.execution, cfg.paper):
         section.validate()
     if cfg.general.profile not in profiles:
         raise ConfigError(f"general.profile = '{cfg.general.profile}', но такого профиля нет")
