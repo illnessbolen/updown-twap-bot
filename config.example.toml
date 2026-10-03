@@ -1,22 +1,33 @@
 # Скопируй в config.toml. Все значения стартовые, их нужно калибровать на записанных данных.
+# Секретов здесь нет и быть не должно: API-ключи Polymarket читаются из переменных окружения
+# POLYMARKET_API_KEY, POLYMARKET_API_SECRET, POLYMARKET_API_PASSPHRASE.
 
 [general]
-dry_run = true              # live возможен только при DRY_RUN=0, --live и файле LIVE_OK
+dry_run = true              # live возможен только при DRY_RUN=0, --live, файле LIVE_OK и dry_run = false
 profile = "conservative"    # conservative | moderate | aggressive
-symbols = ["btc/usd", "eth/usd"]
-windows = [5, 15]           # минуты: 5m рынки (TWAP 30 с), 15m рынки (TWAP 60 с)
+symbols = ["btcusd", "ethusd"]   # формат PolyBolt: строчные, без слэша, quote = usd
+windows = [5, 15]           # длительность рынков в минутах; все они считаются по 60-секундному TWAP
 log_dir = "data"
 db_path = "bot.db"
 
 [feed]
-stale_after_sec = 45        # нет данных дольше этого: переподключение и пауза входов
+url = "wss://ws-live-v2.polymarket.com/ws"   # PolyBolt; требует CLOB API credentials
+twap_window_sec = 60        # PolyBolt отдаёт только 60 с (30 с больше нет)
+stale_after_sec = 45        # нет новых данных дольше этого: переподключение и пауза входов
 reconnect_backoff_sec = [1, 2, 5, 10, 30]
-use_spot_for_sigma = true   # sigma по споту (Binance/Coinbase), а не по сглаженному TWAP
+use_spot_for_sigma = true   # sigma по споту price.crypto (Chainlink), а не по сглаженному TWAP
+spot_provider = ""          # "" = по умолчанию (Chainlink); "chainlink" или "pyth" закрепляет поставщика
+heartbeat_sec = 15          # прикладной ping {"op":"ping"}; pong не считается данными
+pong_timeout_sec = 10
+auth_timeout_sec = 10
+subscribe_timeout_sec = 15
+connect_timeout_sec = 15
 
 [signal]
 min_prints = 20
-cost = 0.02                 # запас на спред и проскальзывание, доля цены контракта
-min_secs_left_windows = 2   # не входить, если до расчёта меньше N окон TWAP
+slippage = 0.005            # запас на спред и проскальзывание сверх комиссии, доля цены контракта
+                            # cost для сигнала = fee_per_share(ask) + slippage (комиссия 1.75 цента при 0.50)
+min_secs_left_windows = 2   # не входить, если до расчёта меньше N окон TWAP (окно = 60 с)
 
 [execution]
 prefer_maker = true         # сначала пробовать лимитный вход без пересечения спреда
@@ -24,7 +35,7 @@ order_ttl_sec = 10          # через сколько отменять неи�
 stop_slip_floor = 0.03      # нижняя граница цены для агрессивного стопа
 
 [paper]
-latency_ms = 300            # задержка между сигналом и исполнением
+latency_ms = 300            # задержка между сигналом и исполнением; не меньше 150 (taker delay)
 fill_only_on_book = true    # исполнять только по доступному объёму стакана
 
 [profiles.conservative]
@@ -57,3 +68,8 @@ max_spread = 0.02
 [monitor]
 kill_switch_file = "KILL"   # если файл существует, новые входы запрещены, открытые позиции закрываются
 report_every_min = 60
+
+[recording]
+enabled = true              # сырые кадры потока в JSONL, файл на каждый час UTC
+gzip = true                 # закрытые часовые файлы сжимаются
+status_every_sec = 60       # как часто писать строку статуса в лог

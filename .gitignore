@@ -1,0 +1,22 @@
+# Секреты и локальное состояние: никогда не коммитить
+.env
+.env.*
+!.env.example
+*.db
+*.db-wal
+*.db-shm
+LIVE_OK
+KILL
+
+# Записанные данные (JSONL, gzip)
+data/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
