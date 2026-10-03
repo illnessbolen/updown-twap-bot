@@ -1,0 +1,20 @@
+# секреты и ключи
+.env
+.env.*
+!.env.example
+*.key
+LIVE_OK
+KILL
+
+# данные и база
+*.db
+*.db-wal
+*.db-shm
+data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/

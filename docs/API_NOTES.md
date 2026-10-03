@@ -62,6 +62,11 @@
 Ответ: `{apiKey, secret, passphrase}` ([DOC] [API → Authentication](https://docs.polymarket.com/getting-started/api.md)).
 Нужны ли на кошельке средства, чтобы создать ключ, в документации не сказано: **TODO(verify)**.
 
+[LIVE] Формат L1-подписи проверен скриптом `scripts/get_clob_api_key.py` (подпись байт в байт совпадает с SDK 0.12.0):
+для нового адреса с верной подписью `GET /auth/derive-api-key` отвечает `400 {"error":"Could not derive api key!"}`
+(ключа ещё нет), с испорченной подписью `401 {"error":"Invalid L1 Request headers"}`. Сам `POST /auth/api-key` не вызывался.
+Cloudflare перед CLOB отвечает `403 error code: 1010` на User-Agent по умолчанию `Python-urllib`, поэтому нужен свой User-Agent.
+
 ### 1.2 Каналы и символы [DOC]
 
 | Канал | Что | Фильтр | Провайдер |
@@ -341,4 +346,5 @@ fee (USD) = C × feeRate × p × (1 − p)
   `PING`/`PONG`, замер плотности потока.
 - CLOB REST `/book`: формат и порядок уровней.
 - RTDS legacy: ещё отдаёт Chainlink-спот без авторизации.
+- CLOB L1-авторизация: формат подписи принят сервером (400 для адреса без ключа, 401 для плохой подписи).
 - PolyBolt: **не проверен**, хост заблокирован прокси этой среды.
