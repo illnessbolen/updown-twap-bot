@@ -1,0 +1,59 @@
+# Скопируй в config.toml. Все значения стартовые, их нужно калибровать на записанных данных.
+
+[general]
+dry_run = true              # live возможен только при DRY_RUN=0, --live и файле LIVE_OK
+profile = "conservative"    # conservative | moderate | aggressive
+symbols = ["btc/usd", "eth/usd"]
+windows = [5, 15]           # минуты: 5m рынки (TWAP 30 с), 15m рынки (TWAP 60 с)
+log_dir = "data"
+db_path = "bot.db"
+
+[feed]
+stale_after_sec = 45        # нет данных дольше этого: переподключение и пауза входов
+reconnect_backoff_sec = [1, 2, 5, 10, 30]
+use_spot_for_sigma = true   # sigma по споту (Binance/Coinbase), а не по сглаженному TWAP
+
+[signal]
+min_prints = 20
+cost = 0.02                 # запас на спред и проскальзывание, доля цены контракта
+min_secs_left_windows = 2   # не входить, если до расчёта меньше N окон TWAP
+
+[execution]
+prefer_maker = true         # сначала пробовать лимитный вход без пересечения спреда
+order_ttl_sec = 10          # через сколько отменять неисполненный вход
+stop_slip_floor = 0.03      # нижняя граница цены для агрессивного стопа
+
+[paper]
+latency_ms = 300            # задержка между сигналом и исполнением
+fill_only_on_book = true    # исполнять только по доступному объёму стакана
+
+[profiles.conservative]
+min_edge = 0.05
+position_usd = 5
+max_concurrent = 1
+daily_loss_limit_usd = 10
+stop_pct = 0.03
+min_book_depth_usd = 300
+max_spread = 0.01
+
+[profiles.moderate]
+min_edge = 0.035
+position_usd = 10
+max_concurrent = 2
+daily_loss_limit_usd = 25
+stop_pct = 0.04
+min_book_depth_usd = 200
+max_spread = 0.015
+
+[profiles.aggressive]
+min_edge = 0.02
+position_usd = 20
+max_concurrent = 4
+daily_loss_limit_usd = 50
+stop_pct = 0.05
+min_book_depth_usd = 100
+max_spread = 0.02
+
+[monitor]
+kill_switch_file = "KILL"   # если файл существует, новые входы запрещены, открытые позиции закрываются
+report_every_min = 60
