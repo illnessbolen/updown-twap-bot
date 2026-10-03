@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS positions (
     market_id     TEXT NOT NULL,
     token_id      TEXT NOT NULL,              -- токен Up или Down
     side          TEXT NOT NULL CHECK (side IN ('up','down')),
-    symbol        TEXT NOT NULL,              -- например 'btc/usd'
-    twap_window   INTEGER NOT NULL,           -- 30 или 60
+    symbol        TEXT NOT NULL,              -- например 'btcusd' (символ PolyBolt)
+    twap_window   INTEGER NOT NULL,           -- окно TWAP, сек (сейчас всегда 60)
     strike        REAL NOT NULL,              -- цена в начале интервала
     resolve_ts    REAL NOT NULL,              -- unix time расчёта
     signal_edge   REAL,                       -- edge в момент входа (для анализа)

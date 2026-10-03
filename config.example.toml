@@ -1,21 +1,25 @@
 # Скопируй в config.toml. Все значения стартовые, их нужно калибровать на записанных данных.
+# Неизвестный ключ или неверный тип - ошибка при запуске (защита от опечаток).
 
 [general]
-dry_run = true              # live возможен только при DRY_RUN=0, --live и файле LIVE_OK
+dry_run = true              # live возможен только если dry_run = false И DRY_RUN=0 И --live И файл LIVE_OK
 profile = "conservative"    # conservative | moderate | aggressive
-symbols = ["btc/usd", "eth/usd"]
-windows = [5, 15]           # минуты: 5m рынки (TWAP 30 с), 15m рынки (TWAP 60 с)
-log_dir = "data"
+symbols = ["btcusd", "ethusd"]   # символы PolyBolt: нижний регистр, суффикс usd (не btc/usd)
+windows = [5, 15]           # минуты. Оба типа рынков рассчитываются по Chainlink TWAP 60 с (docs/API_NOTES.md, §0)
+log_dir = "data"            # JSONL-записи: data/ГГГГ-ММ-ДД/*.jsonl (дата по UTC)
 db_path = "bot.db"
 
 [feed]
-stale_after_sec = 45        # нет данных дольше этого: переподключение и пауза входов
+url = "wss://ws-live-v2.polymarket.com/ws"   # PolyBolt; нужны POLY_API_KEY/SECRET/PASSPHRASE в окружении или .env
+twap_window_sec = 60        # другого окна PolyBolt не отдаёт
+stale_after_sec = 45        # нет данных или цена старше этого: переподключение и пауза входов
 reconnect_backoff_sec = [1, 2, 5, 10, 30]
-use_spot_for_sigma = true   # sigma по споту (Binance/Coinbase), а не по сглаженному TWAP
+use_spot_for_sigma = true   # sigma по споту, а не по сглаженному TWAP
+spot_provider = "chainlink" # "chainlink" | "pyth" | "" (по умолчанию сервера)
 
 [signal]
 min_prints = 20
-cost = 0.02                 # запас на спред и проскальзывание, доля цены контракта
+cost = 0.02                 # запас на спред и проскальзывание, доля цены контракта (комиссия считается отдельно, fees.py)
 min_secs_left_windows = 2   # не входить, если до расчёта меньше N окон TWAP
 
 [execution]
@@ -24,7 +28,7 @@ order_ttl_sec = 10          # через сколько отменять неи�
 stop_slip_floor = 0.03      # нижняя граница цены для агрессивного стопа
 
 [paper]
-latency_ms = 300            # задержка между сигналом и исполнением
+latency_ms = 300            # задержка между сигналом и исполнением (taker delay на крипторынках сейчас 150 мс)
 fill_only_on_book = true    # исполнять только по доступному объёму стакана
 
 [profiles.conservative]
